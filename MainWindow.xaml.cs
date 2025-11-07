@@ -18,11 +18,13 @@ using System.Net.Http;
 using System.Text.Json;
 using WidgetES.Properties;
 using System.IO;
+using Newtonsoft.Json;
 
 namespace WidgetES
 {
     public partial class MainWindow : Window
     {
+        private string notesFile = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WidgetES", "notes.json");
         private DispatcherTimer timer;
         private int currentCharacter = 0;
         private List<string> characterImages;
@@ -31,6 +33,7 @@ namespace WidgetES
         private List<string> notes = new();
         private string notesFilePath;
         private bool isNotesMode = false;
+        private bool notesLoaded = false;
 
         public MainWindow()
         {
@@ -371,31 +374,49 @@ namespace WidgetES
         {
             try
             {
-                if (File.Exists(notesFilePath))
+                string dir = System.IO.Path.GetDirectoryName(notesFile);
+                if (!Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
+
+                if (File.Exists(notesFile))
                 {
-                    string json = File.ReadAllText(notesFilePath);
-                    notes = JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>();
+                    string json = File.ReadAllText(notesFile);
+                    notes = JsonConvert.DeserializeObject<List<string>>(json) ?? new List<string>();
                 }
             }
-            catch { notes = new List<string>(); }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Ошибка загрузки заметок: " + ex.Message);
+            }
         }
 
         private void SaveNotes()
         {
             try
             {
-                string dir = System.IO.Path.GetDirectoryName(notesFilePath)!;
-                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
-                string json = JsonSerializer.Serialize(notes, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(notesFilePath, json);
+                string dir = System.IO.Path.GetDirectoryName(notesFile);
+                if (!Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
+
+                string json = JsonConvert.SerializeObject(notes, Formatting.Indented);
+                File.WriteAllText(notesFile, json);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Ошибка сохранения: " + ex.Message);
+            }
         }
 
         private void ShowNotesOnTablet()
         {
+            isNotesMode = true;
             InfoPanel.Visibility = Visibility.Visible;
             TimePanel.Visibility = Visibility.Collapsed;
+
+            if (notesLoaded)
+                RebuildNotesList();
+            else
+                this.Dispatcher.InvokeAsync(RebuildNotesList, DispatcherPriority.Loaded);
 
             NotesContainer.Children.Clear();
 
@@ -463,7 +484,6 @@ namespace WidgetES
                         Foreground = Brushes.White,
                         Margin = new Thickness(10, 0, 0, 0)
                     };
-                    deleteBtn.Click += (s, e) => DeleteNote(index);
                     Grid.SetColumn(deleteBtn, 1);
 
                     grid.Children.Add(textBlock);
@@ -474,43 +494,208 @@ namespace WidgetES
                 }
             }
 
-            // Кнопка добавить
+            // === ПОЛЕ ВВОДА + КНОПКА ===
+            var inputGrid = new Grid
+            {
+                Margin = new Thickness(0, 15, 0, 10),
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            inputGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(180) });
+            inputGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var textBox = new TextBox
+            {
+                Name = "NoteInputBox",
+                Background = new SolidColorBrush(Color.FromRgb(50, 50, 50)),
+                Foreground = Brushes.White,
+                BorderBrush = new SolidColorBrush(Color.FromRgb(100, 100, 100)),
+                BorderThickness = new Thickness(1),
+                Padding = new Thickness(10),
+                FontSize = 14,
+                CaretBrush = Brushes.White,
+                SelectionBrush = new SolidColorBrush(Color.FromRgb(74, 124, 89)),
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                MinWidth = 130
+            };
+
             var addBtn = new Button
             {
-                Content = "➕ Добавить",
-                Width = 150,
+                Content = "Plus",
+                Width = 40,
                 Height = 40,
                 Background = new SolidColorBrush(Color.FromRgb(74, 124, 89)),
                 Foreground = Brushes.White,
                 FontWeight = FontWeights.SemiBold,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 20, 0, 10)
+                BorderThickness = new Thickness(0),
+                Cursor = Cursors.Hand,
+                Margin = new Thickness(8, 0, 0, 0)
             };
-            addBtn.Click += (s, e) => AddNote();
 
-            NotesContainer.Children.Add(addBtn);
-        }
-        private void DeleteNote(int index)
-        {
-            if (MessageBox.Show("Удалить заметку?", "Подтверждение", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            addBtn.Click += (s, e) =>
             {
-                notes.RemoveAt(index);
-                SaveNotes();
-                ShowNotesOnTablet();
-            }
-        }
+                string text = textBox.Text.Trim();
+                if (!string.IsNullOrEmpty(text))
+                {
+                    notes.Add(text);
+                    SaveNotes();
+                    textBox.Text = "";
+                    RebuildNotesList();
+                }
+                textBox.Focus();
+            };
 
-        private void AddNote()
-        {
-            var input = Microsoft.VisualBasic.Interaction.InputBox(
-                "Введите текст заметки:", "Новая заметка", ""
-            );
-            if (!string.IsNullOrWhiteSpace(input))
+            textBox.KeyDown += (s, e) =>
             {
-                notes.Add(input);
-                SaveNotes();
-                ShowNotesOnTablet();
+                if (e.Key == Key.Enter)
+                    addBtn.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            };
+
+            Grid.SetColumn(textBox, 0);
+            Grid.SetColumn(addBtn, 1);
+            inputGrid.Children.Add(textBox);
+            inputGrid.Children.Add(addBtn);
+
+            NotesContainer.Children.Add(inputGrid);
+        }
+        private void RebuildNotesList()
+        {
+            NotesContainer.Children.Clear();
+
+            // === ЗАГОЛОВОК ===
+            NotesContainer.Children.Add(new TextBlock
+            {
+                Text = "Заметки",
+                FontSize = 20,
+                FontWeight = FontWeights.Bold,
+                Foreground = Brushes.White,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 0, 0, 15)
+            });
+
+            // === ЗАМЕТКИ ===
+            for (int i = 0; i < notes.Count; i++)
+            {
+                int index = i;
+                string note = notes[i];
+
+                var border = new Border
+                {
+                    Background = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
+                    CornerRadius = new CornerRadius(10),
+                    Padding = new Thickness(12),
+                    Margin = new Thickness(0, 0, 0, 8),
+                    // ← ВАЖНО: НЕ ОГРАНИЧИВАЕМ ВЫСОТУ!
+                };
+
+                var grid = new Grid();
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+                // === ТЕКСТ С ПЕРЕНОСОМ ===
+                var textBlock = new TextBlock
+                {
+                    Text = note,
+                    Foreground = Brushes.White,
+                    FontSize = 15,
+                    TextWrapping = TextWrapping.Wrap,  // ← ПЕРЕНОС ПО СЛОВАМ
+                    LineHeight = 20,                   // ← Красивый межстрочный
+                    MaxWidth = 180                     // ← Ограничиваем ширину текста
+                };
+
+                Grid.SetColumn(textBlock, 0);
+                grid.Children.Add(textBlock);
+
+                // === КНОПКА УДАЛЕНИЯ ===
+                var deleteBtn = new Button
+                {
+                    Content = "🗑",
+                    Width = 32,
+                    Height = 32,
+                    Background = new SolidColorBrush(Color.FromRgb(200, 60, 60)),
+                    Foreground = Brushes.White,
+                    BorderThickness = new Thickness(0),
+                    Cursor = Cursors.Hand,
+                    VerticalAlignment = VerticalAlignment.Top // ← Прижать к верху
+                };
+
+                deleteBtn.Click += (s, e) =>
+                {
+                    notes.RemoveAt(index);
+                    SaveNotes();
+                    RebuildNotesList();
+                };
+
+                Grid.SetColumn(deleteBtn, 1);
+                grid.Children.Add(deleteBtn);
+
+                border.Child = grid;
+                NotesContainer.Children.Add(border);
             }
+
+            // === ПОЛЕ ВВОДА + КНОПКА ===
+            var inputGrid = new Grid
+            {
+                Margin = new Thickness(0, 15, 0, 10),
+                MaxWidth = 240,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                MinWidth = 130
+            };
+            inputGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(180) });
+            inputGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var textBox = new TextBox
+            {
+                Background = new SolidColorBrush(Color.FromRgb(50, 50, 50)),
+                Foreground = Brushes.White,
+                BorderBrush = new SolidColorBrush(Color.FromRgb(100, 100, 100)),
+                BorderThickness = new Thickness(1),
+                Padding = new Thickness(10),
+                FontSize = 14,
+                CaretBrush = Brushes.White,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                MinWidth = 130
+            };
+
+            var addBtn = new Button
+            {
+                //Content = "Plus",
+                //Width = 40,
+                //Height = 40,
+                //Background = new SolidColorBrush(Color.FromRgb(74, 124, 89)),
+                //Foreground = Brushes.White,
+                //BorderThickness = new Thickness(0),
+                //Margin = new Thickness(8, 0, 0, 0),
+                //Cursor = Cursors.Hand
+            };
+
+            addBtn.Click += (s, e) =>
+            {
+                string text = textBox.Text.Trim();
+                if (!string.IsNullOrEmpty(text))
+                {
+                    notes.Add(text);
+                    SaveNotes();
+                    textBox.Text = "";
+                    RebuildNotesList();
+                    textBox.Focus();
+                }
+            };
+
+            textBox.KeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Enter)
+                    addBtn.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            };
+
+            Grid.SetColumn(textBox, 0);
+            Grid.SetColumn(addBtn, 1);
+            inputGrid.Children.Add(textBox);
+            inputGrid.Children.Add(addBtn);
+
+            NotesContainer.Children.Add(inputGrid);
         }
 
         private async void WeatherButton_Click(object sender, RoutedEventArgs e)
