@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35303.130
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WidgetES", "WidgetES.csproj", "{064947FC-C955-4F66-88CB-CD68B2FBBEF8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{064947FC-C955-4F66-88CB-CD68B2FBBEF8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{064947FC-C955-4F66-88CB-CD68B2FBBEF8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{064947FC-C955-4F66-88CB-CD68B2FBBEF8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{064947FC-C955-4F66-88CB-CD68B2FBBEF8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5083DA61-6D4F-4486-9F1B-E7FC1C452C0A}
+	EndGlobalSection
+EndGlobal
