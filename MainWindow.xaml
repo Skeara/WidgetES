@@ -103,11 +103,40 @@
                         </Grid>
 
                         <!-- ПАНЕЛЬ ДЛЯ ИНФОРМАЦИИ -->
-                        <Grid x:Name="InfoPanel" Visibility="Collapsed">
-                            <TextBlock x:Name="InfoText" Text=""
-                       FontSize="16" Foreground="White"
-                       TextWrapping="Wrap" HorizontalAlignment="Center"
-                       VerticalAlignment="Center" TextAlignment="Center"/>
+                        <Grid x:Name="InfoPanel" Visibility="Collapsed" Background="Transparent">
+                            <ScrollViewer VerticalScrollBarVisibility="Hidden"
+                  HorizontalScrollBarVisibility="Disabled"
+                  PanningMode="VerticalOnly"
+                  Margin="10" MaxHeight="150">
+                                <!-- Скрываем полосу, но оставляем колёсико -->
+                                <ScrollViewer.Resources>
+                                    <Style TargetType="ScrollBar">
+                                        <Setter Property="Opacity" Value="0"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Opacity" Value="0.5"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ScrollViewer.Resources>
+
+                                <!-- Контейнер с центрированием -->
+                                <StackPanel x:Name="NotesContainer"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    MaxWidth="280">
+                                    <StackPanel.Resources>
+                                        <!-- Убираем перенос для всех TextBlock -->
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="TextWrapping" Value="Wrap"/>
+                                            <Setter Property="TextAlignment" Value="Center"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                            <Setter Property="FontSize" Value="16"/>
+                                            <Setter Property="Margin" Value="0,5"/>
+                                        </Style>
+                                    </StackPanel.Resources>
+                                </StackPanel>
+                            </ScrollViewer>
                         </Grid>
                     </Grid>
                 </Border>

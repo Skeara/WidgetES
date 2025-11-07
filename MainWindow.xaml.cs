@@ -397,8 +397,9 @@ namespace WidgetES
             InfoPanel.Visibility = Visibility.Visible;
             TimePanel.Visibility = Visibility.Collapsed;
 
-            InfoText.Inlines.Clear();
+            NotesContainer.Children.Clear();
 
+            // Заголовок
             var title = new TextBlock
             {
                 Text = "Заметки",
@@ -406,64 +407,99 @@ namespace WidgetES
                 FontWeight = FontWeights.Bold,
                 Foreground = Brushes.White,
                 HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 0, 0, 10)
+                Margin = new Thickness(0, 0, 0, 20)
             };
-            InfoText.Inlines.Add(title);
+            NotesContainer.Children.Add(title);
 
+            // Если нет заметок
             if (notes.Count == 0)
             {
-                InfoText.Inlines.Add(new Run("Заметок нет. Нажмите ➕ чтобы добавить.")
+                var empty = new TextBlock
                 {
-                    Foreground = new SolidColorBrush(Color.FromRgb(180, 180, 180)),
-                    FontStyle = FontStyles.Italic
-                });
+                    Text = "Заметок нет.\nНажмите ➕ Добавить",
+                    Foreground = new SolidColorBrush(Colors.Gray),
+                    FontStyle = FontStyles.Italic,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    TextAlignment = TextAlignment.Center,
+                    Margin = new Thickness(10)
+                };
+                NotesContainer.Children.Add(empty);
             }
             else
             {
+                // Все заметки
                 for (int i = 0; i < notes.Count; i++)
                 {
                     int index = i;
-                    var stack = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 5, 0, 5) };
+                    string noteText = notes[i];
 
-                    var text = new TextBlock
+                    var border = new Border
                     {
-                        Text = notes[i],
+                        Background = new SolidColorBrush(Color.FromRgb(70, 70, 70)),
+                        CornerRadius = new CornerRadius(8),
+                        Padding = new Thickness(12),
+                        Margin = new Thickness(0, 0, 0, 10)
+                    };
+
+                    var grid = new Grid();
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+                    var textBlock = new TextBlock
+                    {
+                        Text = noteText,
                         Foreground = Brushes.White,
                         TextWrapping = TextWrapping.Wrap,
-                        Width = 200
+                        VerticalAlignment = VerticalAlignment.Center
                     };
+                    Grid.SetColumn(textBlock, 0);
 
                     var deleteBtn = new Button
                     {
-                        Content = "Trash",
-                        Width = 30,
-                        Height = 30,
+                        Content = "🗑️",
+                        Width = 32,
+                        Height = 32,
                         Background = new SolidColorBrush(Color.FromRgb(200, 60, 60)),
                         Foreground = Brushes.White,
                         Margin = new Thickness(10, 0, 0, 0)
                     };
                     deleteBtn.Click += (s, e) => DeleteNote(index);
+                    Grid.SetColumn(deleteBtn, 1);
 
-                    stack.Children.Add(text);
-                    stack.Children.Add(deleteBtn);
-                    InfoText.Inlines.Add(stack);
+                    grid.Children.Add(textBlock);
+                    grid.Children.Add(deleteBtn);
+                    border.Child = grid;
+
+                    NotesContainer.Children.Add(border);
                 }
             }
 
-            // Кнопка добавления
+            // Кнопка добавить
             var addBtn = new Button
             {
-                Content = "Plus Добавить",
-                Width = 120,
-                Height = 35,
+                Content = "➕ Добавить",
+                Width = 150,
+                Height = 40,
                 Background = new SolidColorBrush(Color.FromRgb(74, 124, 89)),
                 Foreground = Brushes.White,
+                FontWeight = FontWeights.SemiBold,
                 HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 15, 0, 0)
+                Margin = new Thickness(0, 20, 0, 10)
             };
             addBtn.Click += (s, e) => AddNote();
-            InfoText.Inlines.Add(addBtn);
+
+            NotesContainer.Children.Add(addBtn);
         }
+        private void DeleteNote(int index)
+        {
+            if (MessageBox.Show("Удалить заметку?", "Подтверждение", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            {
+                notes.RemoveAt(index);
+                SaveNotes();
+                ShowNotesOnTablet();
+            }
+        }
+
         private void AddNote()
         {
             var input = Microsoft.VisualBasic.Interaction.InputBox(
@@ -472,16 +508,6 @@ namespace WidgetES
             if (!string.IsNullOrWhiteSpace(input))
             {
                 notes.Add(input);
-                SaveNotes();
-                ShowNotesOnTablet();
-            }
-        }
-
-        private void DeleteNote(int index)
-        {
-            if (MessageBox.Show("Удалить заметку?", "Подтверждение", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-            {
-                notes.RemoveAt(index);
                 SaveNotes();
                 ShowNotesOnTablet();
             }
@@ -569,15 +595,24 @@ namespace WidgetES
 
         private void ShowInfo(string text)
         {
-            TimePanel.Visibility = Visibility.Collapsed;
+            isNotesMode = false;
             InfoPanel.Visibility = Visibility.Visible;
-            InfoText.Text = text;
+            TimePanel.Visibility = Visibility.Collapsed;
+
+            NotesContainer.Children.Clear();
+
+            var lines = text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                NotesContainer.Children.Add(new TextBlock { Text = line });
+            }
         }
 
         private void ShowTime()
         {
             InfoPanel.Visibility = Visibility.Collapsed;
             TimePanel.Visibility = Visibility.Visible;
+            isNotesMode = false; // ← ВОТ ЭТО КЛЮЧЕВОЕ
         }
 
         private DispatcherTimer weatherTimer;
