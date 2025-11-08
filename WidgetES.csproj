@@ -6,11 +6,30 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+	  <AssemblyTitle>WidgetES</AssemblyTitle>
+	  <AssemblyProduct>WidgetES</AssemblyProduct>
+	  <Company>Mozimer Russia Entertainment</Company>
+	  <Authors>Mozimer Russia Entertainment</Authors>
+	  <Copyright>© 2025 Mozimer Russia Entertainment. Все права защищены.</Copyright>
+	  <Version>1.0</Version>
+	  <FileVersion>1.0</FileVersion>
+	  <ApplicationIcon>mozimer.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="Images\character1.png" />
+    <None Remove="Images\character10.png" />
     <None Remove="Images\character2.png" />
+    <None Remove="Images\character3.png" />
+    <None Remove="Images\character4.png" />
+    <None Remove="Images\character5.png" />
+    <None Remove="Images\character6.png" />
+    <None Remove="Images\character7.png" />
+    <None Remove="Images\character8.png" />
+    <None Remove="Images\character9.png" />
+    <None Remove="Images\yoomoney.png" />
+    <None Remove="kryg2.png" />
+    <None Remove="mozimer.ico" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,13 +43,27 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Autoupdater.NET.Official" Version="1.9.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="System.Management" Version="9.0.10" />
   </ItemGroup>
 
   <ItemGroup>
     <Resource Include="Images\character1.png" />
+    <Resource Include="Images\character10.png" />
     <Resource Include="Images\character2.png" />
+    <Resource Include="Images\character3.png" />
+    <Resource Include="Images\character4.png" />
+    <Resource Include="Images\character5.png" />
+    <Resource Include="Images\character6.png" />
+    <Resource Include="Images\character7.png" />
+    <Resource Include="Images\character8.png" />
+    <Resource Include="Images\character9.png" />
+    <Resource Include="Images\yoomoney.png" />
+    <Resource Include="kryg2.png" />
+    <Content Include="mozimer.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

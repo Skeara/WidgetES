@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WidgetES"
         mc:Ignorable="d"
+        ShowInTaskbar="False"
         Title="WidgetES"
         Height="500" Width="350"
         WindowStyle="None"
@@ -12,7 +13,7 @@
         Background="Transparent"
         AllowsTransparency="True"
         Topmost="True"
-        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+        MouseLeftButtonDown="Window_MouseLeftButtonDown" Icon="/kryg2.png">
 
     <Window.Resources>
         <Style x:Key="IconButtonStyle" TargetType="Button">
@@ -72,7 +73,7 @@
                 <!-- Левые кнопки -->
                 <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="5,0,0,0">
                     <Button x:Name="TimerButton" Width="60" Height="40" Margin="0,5" 
-                Style="{StaticResource IconButtonStyle}" Click="TimerButton_Click" ToolTip="Таймер">
+                Style="{StaticResource IconButtonStyle}" Click="TimerButton_Click" ToolTip="Часы">
                         <TextBlock Text="🕒" FontSize="20"/>
                     </Button>
                     <Button x:Name="NotesButton" Width="60" Height="40" Margin="0,5" 

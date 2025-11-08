@@ -5,11 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WidgetES"
         mc:Ignorable="d"
+        ShowInTaskbar="False"
         Title="Настройки"
         Height="500" Width="750"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Background="#F5F5F5">
+        Background="#F5F5F5" Icon="/mozimer.ico">
     <Window.Resources>
         <!-- Стиль кнопки персонажа -->
         <Style x:Key="CharacterButtonStyle" TargetType="Button">
@@ -64,72 +65,203 @@
             </Grid.ColumnDefinitions>
 
             <!-- === ЛЕВАЯ ЧАСТЬ: ПЕРСОНАЖИ === -->
-            <Grid Grid.Column="0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+            <ScrollViewer Grid.Column="0"
+              VerticalScrollBarVisibility="Auto"
+              HorizontalScrollBarVisibility="Disabled"
+              Margin="0,0,10,0">
+                <Grid x:Name="CharactersGrid">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-                <!-- Персонаж 1 -->
-                <Button Grid.Row="0" Grid.Column="0"
-                        x:Name="Character1Button"
-                        Style="{StaticResource CharacterButtonStyle}"
-                        Click="Character1Button_Click">
-                    <StackPanel>
-                        <Border Background="White" Height="130" CornerRadius="5" Margin="5">
-                            <Image x:Name="Character1Image" Stretch="Uniform"/>
-                        </Border>
-                        <TextBlock Text="Персонаж 1" HorizontalAlignment="Center" Margin="0,5,0,0"/>
-                    </StackPanel>
-                </Button>
+                    <!-- Строки будут добавлены автоматически под контент -->
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                <!-- Персонаж 2 -->
-                <Button Grid.Row="0" Grid.Column="1"
-                        x:Name="Character2Button"
-                        Style="{StaticResource CharacterButtonStyle}"
-                        Click="Character2Button_Click">
-                    <StackPanel>
-                        <Border Background="White" Height="130" CornerRadius="5" Margin="5">
-                            <Image x:Name="Character2Image" Stretch="Uniform"/>
-                        </Border>
-                        <TextBlock Text="Персонаж 2" HorizontalAlignment="Center" Margin="0,5,0,0"/>
-                    </StackPanel>
-                </Button>
+                    <!-- Персонаж 1 -->
+                    <Button Grid.Row="0" Grid.Column="0"
+                x:Name="Character1Button"
+                Style="{StaticResource CharacterButtonStyle}"
+                Click="Character1Button_Click">
+                        <StackPanel>
+                            <Border Background="White" MinHeight="130" CornerRadius="5" Margin="5">
+                                <Image x:Name="Character1Image" Stretch="Uniform"/>
+                            </Border>
+                            <TextBlock Text="Лилия (Проект «Оранжевый»)" 
+                           HorizontalAlignment="Center" 
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Margin="0,5,0,0"/>
+                        </StackPanel>
+                    </Button>
 
-                <!-- Персонаж 3 -->
-                <Button Grid.Row="1" Grid.Column="0"
-                        x:Name="Character3Button"
-                        Style="{StaticResource CharacterButtonStyle}"
-                        Click="Character3Button_Click">
-                    <StackPanel>
-                        <Border Background="White" Height="130" CornerRadius="5" Margin="5">
-                            <Image x:Name="Character3Image" Stretch="Uniform"/>
-                        </Border>
-                        <TextBlock Text="Персонаж 3" HorizontalAlignment="Center" Margin="0,5,0,0"/>
-                    </StackPanel>
-                </Button>
+                    <!-- Персонаж 2 -->
+                    <Button Grid.Row="0" Grid.Column="1"
+                x:Name="Character2Button"
+                Style="{StaticResource CharacterButtonStyle}"
+                Click="Character2Button_Click">
+                        <StackPanel>
+                            <Border Background="White" MinHeight="130" CornerRadius="5" Margin="5">
+                                <Image x:Name="Character2Image" Stretch="Uniform"/>
+                            </Border>
+                            <TextBlock Text="Александра (Проект «Оранжевый»)" 
+                           HorizontalAlignment="Center" 
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Margin="0,5,0,0"/>
+                        </StackPanel>
+                    </Button>
 
-                <!-- Персонаж 4 -->
-                <Button Grid.Row="1" Grid.Column="1"
-                        x:Name="Character4Button"
-                        Style="{StaticResource CharacterButtonStyle}"
-                        Click="Character4Button_Click">
-                    <StackPanel>
-                        <Border Background="White" Height="130" CornerRadius="5" Margin="5">
-                            <Image x:Name="Character4Image" Stretch="Uniform"/>
-                        </Border>
-                        <TextBlock Text="Персонаж 4" HorizontalAlignment="Center" Margin="0,5,0,0"/>
-                    </StackPanel>
-                </Button>
-            </Grid>
+                    <!-- Персонаж 3 -->
+                    <Button Grid.Row="1" Grid.Column="0"
+                x:Name="Character3Button"
+                Style="{StaticResource CharacterButtonStyle}"
+                Click="Character3Button_Click">
+                        <StackPanel>
+                            <Border Background="White" MinHeight="130" CornerRadius="5" Margin="5">
+                                <Image x:Name="Character3Image" Stretch="Uniform"/>
+                            </Border>
+                            <TextBlock Text="Ольга Дмитриевна" 
+                           HorizontalAlignment="Center" 
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Margin="0,5,0,0"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Персонаж 4 -->
+                    <Button Grid.Row="1" Grid.Column="1"
+                x:Name="Character4Button"
+                Style="{StaticResource CharacterButtonStyle}"
+                Click="Character4Button_Click">
+                        <StackPanel>
+                            <Border Background="White" MinHeight="130" CornerRadius="5" Margin="5">
+                                <Image x:Name="Character4Image" Stretch="Uniform"/>
+                            </Border>
+                            <TextBlock Text="Виола" 
+                           HorizontalAlignment="Center" 
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Margin="0,5,0,0"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Персонаж 5 -->
+                    <Button Grid.Row="2" Grid.Column="0"
+                x:Name="Character5Button"
+                Style="{StaticResource CharacterButtonStyle}"
+                Click="Character5Button_Click">
+                        <StackPanel>
+                            <Border Background="White" MinHeight="130" CornerRadius="5" Margin="5">
+                                <Image x:Name="Character5Image" Stretch="Uniform"/>
+                            </Border>
+                            <TextBlock Text="Алиса" 
+                           HorizontalAlignment="Center" 
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Margin="0,5,0,0"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Персонаж 6 -->
+                    <Button Grid.Row="2" Grid.Column="1"
+                x:Name="Character6Button"
+                Style="{StaticResource CharacterButtonStyle}"
+                Click="Character6Button_Click">
+                        <StackPanel>
+                            <Border Background="White" MinHeight="130" CornerRadius="5" Margin="5">
+                                <Image x:Name="Character6Image" Stretch="Uniform"/>
+                            </Border>
+                            <TextBlock Text="Мику" 
+                           HorizontalAlignment="Center" 
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Margin="0,5,0,0"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Персонаж 7 -->
+                    <Button Grid.Row="3" Grid.Column="0"
+                x:Name="Character7Button"
+                Style="{StaticResource CharacterButtonStyle}"
+                Click="Character7Button_Click">
+                        <StackPanel>
+                            <Border Background="White" MinHeight="130" CornerRadius="5" Margin="5">
+                                <Image x:Name="Character7Image" Stretch="Uniform"/>
+                            </Border>
+                            <TextBlock Text="Лена" 
+                           HorizontalAlignment="Center" 
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Margin="0,5,0,0"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Персонаж 8 -->
+                    <Button Grid.Row="3" Grid.Column="1"
+                x:Name="Character8Button"
+                Style="{StaticResource CharacterButtonStyle}"
+                Click="Character8Button_Click">
+                        <StackPanel>
+                            <Border Background="White" MinHeight="130" CornerRadius="5" Margin="5">
+                                <Image x:Name="Character8Image" Stretch="Uniform"/>
+                            </Border>
+                            <TextBlock Text="Славя" 
+                           HorizontalAlignment="Center" 
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Margin="0,5,0,0"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Персонаж 9 -->
+                    <Button Grid.Row="4" Grid.Column="0"
+                x:Name="Character9Button"
+                Style="{StaticResource CharacterButtonStyle}"
+                Click="Character9Button_Click">
+                        <StackPanel>
+                            <Border Background="White" MinHeight="130" CornerRadius="5" Margin="5">
+                                <Image x:Name="Character9Image" Stretch="Uniform"/>
+                            </Border>
+                            <TextBlock Text="Юля" 
+                           HorizontalAlignment="Center" 
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Margin="0,5,0,0"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Персонаж 10 -->
+                    <Button Grid.Row="4" Grid.Column="1"
+                x:Name="Character10Button"
+                Style="{StaticResource CharacterButtonStyle}"
+                Click="Character10Button_Click">
+                        <StackPanel>
+                            <Border Background="White" MinHeight="130" CornerRadius="5" Margin="5">
+                                <Image x:Name="Character10Image" Stretch="Uniform"/>
+                            </Border>
+                            <TextBlock Text="Ульяна" 
+                           HorizontalAlignment="Center" 
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Margin="0,5,0,0"/>
+                        </StackPanel>
+                    </Button>
+
+                </Grid>
+            </ScrollViewer>
+
+
 
             <!-- === ПРАВАЯ ЧАСТЬ: НАСТРОЙКИ === -->
-            <Border Grid.Column="1" Background="#FAFAFA" CornerRadius="10" Padding="15" Margin="10,0,0,0">
-                <StackPanel VerticalAlignment="Top">
+            <Border Grid.Column="1" Background="#FAFAFA" CornerRadius="10" Padding="15" Margin="10,0,0,-27">
+                <StackPanel VerticalAlignment="Top" Height="323">
                     <TextBlock Text="Город для погоды" FontWeight="SemiBold" Margin="0,0,0,5"/>
                     <TextBox x:Name="CityTextBox" 
                              Text="Moscow"
@@ -140,21 +272,31 @@
                     <TextBlock Text="Тема" FontWeight="SemiBold" Margin="0,15,0,5"/>
                     <ComboBox Width="180" HorizontalAlignment="Left" SelectedIndex="0">
                         <ComboBoxItem>Светлая</ComboBoxItem>
-                        <ComboBoxItem>Тёмная</ComboBoxItem>
+                        <!--<ComboBoxItem>Тёмная</ComboBoxItem>-->
                     </ComboBox>
 
                     <TextBlock Text="Язык" FontWeight="SemiBold" Margin="0,15,0,5"/>
                     <ComboBox Width="180" HorizontalAlignment="Left" SelectedIndex="0">
                         <ComboBoxItem>Русский</ComboBoxItem>
-                        <ComboBoxItem>English</ComboBoxItem>
+                        <!--<ComboBoxItem>English</ComboBoxItem>-->
                     </ComboBox>
+                    <CheckBox x:Name="TopmostCheckBox"
+          Content="Поверх всех окон"
+          Margin="0,15,0,5"
+          FontWeight="SemiBold"
+          Foreground="#333333"/>
+                    <CheckBox x:Name="AutoStartCheckBox"
+          Content="Автозапуск при старте системы"
+          Margin="0,15,0,5"
+          FontWeight="SemiBold"
+          Foreground="#333333"/>
 
                     <!-- Заглушка под будущие настройки -->
-                    <Button Content="Сбросить настройки" 
+                    <!--<Button Content="Сбросить настройки" 
                             Width="180" Height="35" 
                             Margin="0,25,0,0"
                             Background="#E74C3C" Foreground="White" 
-                            FontWeight="Bold" Cursor="Hand"/>
+                            FontWeight="Bold" Cursor="Hand"/>-->
                 </StackPanel>
             </Border>
         </Grid>

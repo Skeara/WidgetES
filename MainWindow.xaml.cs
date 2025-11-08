@@ -19,6 +19,7 @@ using System.Text.Json;
 using WidgetES.Properties;
 using System.IO;
 using Newtonsoft.Json;
+using AutoUpdaterDotNET;
 
 namespace WidgetES
 {
@@ -34,10 +35,17 @@ namespace WidgetES
         private string notesFilePath;
         private bool isNotesMode = false;
         private bool notesLoaded = false;
+        private System.Windows.Forms.NotifyIcon _trayIcon;
+        private System.Drawing.Icon myIcon;
+        private int currentPage = 0; // 0 = время, 1 = погода, 2 = система
+        private DispatcherTimer pageTimer;
+        private bool _isEditingNote = false;
+        private bool isHelpMode = false;
 
         public MainWindow()
         {
             InitializeComponent();
+            SetupTray();
             currentCharacter = Properties.Settings.Default.SelectedCharacter;
             InitializeCharacters();
             LoadCharacter(currentCharacter);
@@ -53,10 +61,106 @@ namespace WidgetES
             );
 
             LoadNotes();
+            this.Topmost = Properties.Settings.Default.AlwaysOnTop;
+            SetAutoStart(Properties.Settings.Default.AutoStart);
             PositionWindowBottomRight();
             //UpdateWeatherButtonOnlyAsync();
             RefreshWeatherAsync();
+            InitializePageTimer();
         }
+
+        private void SetupTray()
+        {
+            _trayIcon = new System.Windows.Forms.NotifyIcon();
+            _trayIcon.Icon = new System.Drawing.Icon("mozimer.ico"); // свой .ico файл
+            _trayIcon.Visible = true;
+            _trayIcon.Text = "WidgetES";
+
+            var menu = new System.Windows.Forms.ContextMenuStrip();
+            menu.Items.Add("Открыть", null, (s, e) => this.Show());
+            menu.Items.Add("Выход", null, (s, e) => Application.Current.Shutdown());
+            _trayIcon.ContextMenuStrip = menu;
+
+            this.StateChanged += (s, e) =>
+            {
+                if (this.WindowState == WindowState.Minimized)
+                    this.Hide();
+            };
+        }
+
+        private void NotesTextBox_GotFocus(object sender, RoutedEventArgs e)
+        {
+            _isEditingNote = true;
+            pageTimer?.Stop(); // ⛔ Останавливаем переключение страниц
+        }
+
+        private void NotesTextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            _isEditingNote = false;
+            pageTimer?.Start(); // ▶️ Возобновляем таймер
+        }
+
+        private void InitializePageTimer()
+        {
+            pageTimer = new DispatcherTimer();
+            pageTimer.Interval = TimeSpan.FromSeconds(10);
+            pageTimer.Tick += PageTimer_Tick;
+            pageTimer.Start();
+        }
+
+        private async void PageTimer_Tick(object sender, EventArgs e)
+        {
+            if (_isEditingNote) return;
+            currentPage = (currentPage + 1) % 3;
+
+            switch (currentPage)
+            {
+                case 0: // Время
+                    UpdateDateTime();
+                    TimePanel.Visibility = Visibility.Visible;
+                    InfoPanel.Visibility = Visibility.Collapsed;
+                    break;
+
+                case 1: // Погода
+                    var weather = await GetWeatherAsync(Properties.Settings.Default.WeatherCity ?? "Moscow"); // Сначала получаем данные
+                    TimePanel.Visibility = Visibility.Collapsed;
+                    InfoPanel.Visibility = Visibility.Visible;
+                    ShowInfo(weather.FullInfo); // Потом отображаем
+                    break;
+
+                case 2: // Система
+                    string systemInfo = GetSystemInfo(); // Получаем данные
+                    TimePanel.Visibility = Visibility.Collapsed;
+                    InfoPanel.Visibility = Visibility.Visible;
+                    ShowInfo(systemInfo); // Отображаем
+                    break;
+            }
+        }
+
+        // Метод для получения системы
+        private string GetSystemInfo()
+        {
+            int batteryPercent = -1;
+            string powerLine = "Неизвестно";
+            var process = System.Diagnostics.Process.GetCurrentProcess();
+            var usedMemory = process.WorkingSet64 / 1024 / 1024;
+
+            try
+            {
+                using var searcher = new System.Management.ManagementObjectSearcher("SELECT * FROM Win32_Battery");
+                foreach (var battery in searcher.Get())
+                {
+                    batteryPercent = Convert.ToInt32(battery["EstimatedChargeRemaining"]);
+                    int status = Convert.ToInt32(battery["BatteryStatus"]);
+                    powerLine = status == 2 ? "Подключено" : "От батареи";
+                }
+                if (batteryPercent < 0) batteryPercent = 100;
+            }
+            catch { }
+
+            return $"Батарея: {batteryPercent}%\nПитание: {powerLine}\nПамять приложения: {usedMemory} МБ";
+        }
+
 
         private void InitializeCharacters()
         {
@@ -66,7 +170,13 @@ namespace WidgetES
                 "pack://application:,,,/Images/character1.png",
                 "pack://application:,,,/Images/character2.png",
                 "pack://application:,,,/Images/character3.png",
-                "pack://application:,,,/Images/character4.png"
+                "pack://application:,,,/Images/character4.png",
+                "pack://application:,,,/Images/character5.png",
+                "pack://application:,,,/Images/character6.png",
+                "pack://application:,,,/Images/character7.png",
+                "pack://application:,,,/Images/character8.png",
+                "pack://application:,,,/Images/character9.png",
+                "pack://application:,,,/Images/character10.png"
             };
         }
 
@@ -114,7 +224,13 @@ namespace WidgetES
                     "- character1.png\n" +
                     "- character2.png\n" +
                     "- character3.png\n" +
-                    "- character4.png",
+                    "- character4.png\n" +
+                    "- character5.png\n" +
+                    "- character6.png\n" +
+                    "- character7.png\n" +
+                    "- character8.png\n" +
+                    "- character9.png\n" +
+                    "- character10.png",
                     "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -149,6 +265,7 @@ namespace WidgetES
 
         private void TimerButton_Click(object sender, RoutedEventArgs e)
         {
+            ResumePageTimer();
             ShowTime();
         }
 
@@ -175,6 +292,7 @@ namespace WidgetES
                 }
                 Properties.Settings.Default.WeatherCity = newCity;
                 Properties.Settings.Default.Save();
+                this.Topmost = Properties.Settings.Default.AlwaysOnTop;
 
                 // ОБНОВЛЯЕМ ВСЁ СРАЗУ:
                 LoadCharacter(currentCharacter);
@@ -244,14 +362,147 @@ namespace WidgetES
 
         private void HelpButton_Click(object sender, RoutedEventArgs e)
         {
+            isHelpMode = true;
+            pageTimer?.Stop();
             string helpText =
-                "⏱ - Таймер\n" +
-                "P - Будильник\n" +
-                "M - Секундомер\n" +
-                "⚙ - Настройки\n" +
-                "? - Помощь\n\n" +
-                "Перетаскивайте окно мышкой!";
-            ShowInfo(helpText);
+                "🛠 Виджет «Бесконечное лето» — справка и поддержка\n\n" +
+                "Если виджет работает некорректно:\n\n" +
+                "- Попробуйте перезапустить приложение.\n\n" +
+                "- Все ошибки логируются в папку:\n\n" +
+                "%AppData%|Roaming|WidgetES|Logs\n\n" +
+                "Контакты для обратной связи:\n\n" +
+                "📧 Email: support@mozimer.ru\n\n" +
+                "💬 VK: vk.com/mozimer\n\n" +
+                "Советы по использованию:\n\n" +
+                "- Перетаскивайте виджет за любое свободное место.\n\n" +
+                "- Виджет запоминает последние заметки и город для погоды.\n\n" +
+                "- Настройте персонажа для уникальной атмосферы рабочего стола.\n\n" +
+                "Часто задаваемые вопросы:\n\n" +
+                "Q: Как добавить новую заметку?\n\n" +
+                "A: Нажмите ➕ и введите текст, затем Enter\n\n" +
+                "Q: Как изменить город для погоды?\n\n" +
+                "A: Через ⚙ Настройки → выберите город → сохраните.\n\n" +
+                "Q: Почему не показывается погода?\n\n" +
+                "A: Убедитесь, что устройство подключено к интернету и город введён корректно.\n\n" +
+                "Q: Как изменить персонажа?\n\n" +
+                "A: Через ⚙ Настройки → выберите персонажа → сохраните.";
+            ShowInfoWithExtras(helpText);
+        }
+
+        private void ResumePageTimer()
+        {
+            if (!pageTimer.IsEnabled)
+                pageTimer.Start();
+            isHelpMode = false;
+        }
+
+        private void ShowInfoWithExtras(string text, string donateUrl = "https://yoomoney.ru/to/410019293336394")
+        {
+            isNotesMode = false;
+            InfoPanel.Visibility = Visibility.Visible;
+            TimePanel.Visibility = Visibility.Collapsed;
+
+            NotesContainer.Children.Clear();
+
+            var donateButton = new Button
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Background = Brushes.Transparent, // прозрачный фон
+                BorderThickness = new Thickness(0), // без рамки
+                Padding = new Thickness(10, 5, 10, 5),
+                Margin = new Thickness(0, 0, 0, 10),
+                Cursor = Cursors.Hand
+            };
+
+            var template = new ControlTemplate(typeof(Button));
+
+            var borderFactory = new FrameworkElementFactory(typeof(Border));
+            borderFactory.Name = "PART_Border"; // ← ВАЖНО: имя для триггера
+            borderFactory.SetValue(Border.BackgroundProperty, Brushes.Transparent);
+            borderFactory.SetValue(Border.CornerRadiusProperty, new CornerRadius(5));
+            borderFactory.SetValue(Border.SnapsToDevicePixelsProperty, true);
+
+            var contentPresenterFactory = new FrameworkElementFactory(typeof(ContentPresenter));
+            contentPresenterFactory.SetValue(ContentPresenter.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+            contentPresenterFactory.SetValue(ContentPresenter.VerticalAlignmentProperty, VerticalAlignment.Center);
+
+            borderFactory.AppendChild(contentPresenterFactory);
+            template.VisualTree = borderFactory;
+
+            // Наведение мыши (легкий эффект)
+            var trigger = new Trigger
+            {
+                Property = UIElement.IsMouseOverProperty,
+                Value = true
+            };
+            trigger.Setters.Add(new Setter(Border.BackgroundProperty, new SolidColorBrush(Color.FromArgb(30, 255, 255, 255)), "PART_Border")); // ← используем имя
+            template.Triggers.Add(trigger);
+
+            donateButton.Template = template;
+
+            var stack = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+
+            // Картинка
+            var donateImg = new Image
+            {
+                Source = new BitmapImage(new Uri("pack://application:,,,/Images/yoomoney.png", UriKind.Absolute)),
+                Height = 46, // ограничиваем высоту
+                Width = 135,  // можно задать, чтобы не растягивалась
+                Stretch = Stretch.Uniform,
+                Margin = new Thickness(0, 0, 5, 0)
+            };
+
+            stack.Children.Add(donateImg);
+            donateButton.Content = stack;
+
+            donateButton.Click += (s, e) =>
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "https://yoomoney.ru/to/410019293336394",
+                        UseShellExecute = true
+                    });
+                }
+                catch { }
+            };
+
+            // Добавляем кнопку первой
+            NotesContainer.Children.Add(donateButton);
+
+            // Разбиваем текст на строки
+            var lines = text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                NotesContainer.Children.Add(new TextBlock
+                {
+                    Text = line,
+                    TextWrapping = TextWrapping.Wrap,
+                    Foreground = Brushes.White,
+                    Margin = new Thickness(0, 0, 0, 4)
+                });
+            }
+
+            // --- Логотип команды ---
+            var logo = new Image
+            {
+                Source = new BitmapImage(new Uri("pack://application:,,,/kryg2.png", UriKind.Absolute)),
+                Height = 60,
+                Margin = new Thickness(0, 10, 0, 10),
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            NotesContainer.Children.Add(logo);
+
+            // --- Копирайт ---
+            NotesContainer.Children.Add(new TextBlock
+            {
+                Text = "©Mozimer Russia Entertainment",
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(0, 10, 0, 0),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Foreground = Brushes.White
+            });
         }
 
 
@@ -359,6 +610,7 @@ namespace WidgetES
 
         private void NotesButton_Click(object sender, RoutedEventArgs e)
         {
+            ResumePageTimer();
             isNotesMode = !isNotesMode;
             if (isNotesMode)
             {
@@ -519,6 +771,9 @@ namespace WidgetES
                 MinWidth = 130
             };
 
+            textBox.GotFocus += NotesTextBox_GotFocus;
+            textBox.LostFocus += NotesTextBox_LostFocus;
+
             var addBtn = new Button
             {
                 Content = "Plus",
@@ -659,6 +914,9 @@ namespace WidgetES
                 MinWidth = 130
             };
 
+            textBox.GotFocus += NotesTextBox_GotFocus;
+            textBox.LostFocus += NotesTextBox_LostFocus;
+
             var addBtn = new Button
             {
                 //Content = "Plus",
@@ -700,6 +958,7 @@ namespace WidgetES
 
         private async void WeatherButton_Click(object sender, RoutedEventArgs e)
         {
+            ResumePageTimer();
             shouldShowWeatherOnTablet = true; // принудительно показываем
             await RefreshWeatherAsync();
         }
@@ -717,20 +976,26 @@ namespace WidgetES
             {
                 string apiKey = "94cdfe16e6cb4f48a46144940250711";
                 string url = $"http://api.weatherapi.com/v1/current.json?key={apiKey}&q={city}&lang=ru";
+
                 using HttpClient client = new HttpClient();
                 var response = await client.GetStringAsync(url);
+
                 using JsonDocument doc = JsonDocument.Parse(response);
                 var root = doc.RootElement;
 
                 string location = root.GetProperty("location").GetProperty("name").GetString()!;
                 double temp = root.GetProperty("current").GetProperty("temp_c").GetDouble();
                 int roundedTemp = (int)Math.Round(temp);
+
                 string condition = root.GetProperty("current").GetProperty("condition").GetProperty("text").GetString()!;
-                
+
+                // Ветер в км/ч → переводим в м/с
+                double windKph = root.GetProperty("current").GetProperty("wind_kph").GetDouble();
+                double windMps = Math.Round(windKph / 3.6, 1); // 1 м/с = 3.6 км/ч
 
                 return new WeatherData
                 {
-                    FullInfo = $"{location}: {roundedTemp}°C, {condition}",
+                    FullInfo = $"{location}:\n🌡 {roundedTemp}°C\n{condition}\n💨 Ветер: {windMps} м/с",
                     Temperature = roundedTemp,
                     Condition = condition
                 };
@@ -745,8 +1010,10 @@ namespace WidgetES
             }
         }
 
+
         private void SystemButton_Click(object sender, RoutedEventArgs e)
         {
+            ResumePageTimer();
             try
             {
                 int batteryPercent = -1;
@@ -820,6 +1087,34 @@ namespace WidgetES
             var weather = await GetWeatherAsync(city);
             int roundedTemp = (int)Math.Round(weather.Temperature);
             WeatherText.Text = $"{roundedTemp}°";
+        }
+
+        private void SetAutoStart(bool enable)
+        {
+            try
+            {
+                string exePath = Process.GetCurrentProcess().MainModule.FileName;
+                string appName = "WidgetES";
+
+                using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
+                    @"Software\Microsoft\Windows\CurrentVersion\Run", true))
+                {
+                    if (enable)
+                    {
+                        key.SetValue(appName, $"\"{exePath}\"");
+                    }
+                    else
+                    {
+                        if (key.GetValue(appName) != null)
+                            key.DeleteValue(appName, false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка автозапуска: {ex.Message}", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
     }
 }

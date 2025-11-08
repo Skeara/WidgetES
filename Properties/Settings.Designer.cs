@@ -46,5 +46,29 @@ namespace WidgetES.Properties {
                 this["SelectedCharacter"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool AlwaysOnTop {
+            get {
+                return ((bool)(this["AlwaysOnTop"]));
+            }
+            set {
+                this["AlwaysOnTop"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool AutoStart {
+            get {
+                return ((bool)(this["AutoStart"]));
+            }
+            set {
+                this["AutoStart"] = value;
+            }
+        }
     }
 }
