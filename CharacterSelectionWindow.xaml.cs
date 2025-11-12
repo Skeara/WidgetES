@@ -12,6 +12,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using System.IO;
 
 namespace WidgetES
 {
@@ -209,20 +210,26 @@ namespace WidgetES
         {
             try
             {
+                // Получаем путь к exe
                 string exePath = Process.GetCurrentProcess().MainModule.FileName;
-                string appName = "WidgetES";
 
-                using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
-                    @"Software\Microsoft\Windows\CurrentVersion\Run", true))
+                // Путь к папке автозагрузки
+                string startupFolder = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+                string shortcutPath = System.IO.Path.Combine(startupFolder, "WidgetES.lnk");
+
+                if (enable)
                 {
-                    if (enable)
+                    // Создаем ярлык
+                    CreateShortcut(shortcutPath, exePath);
+                    MessageBox.Show($"Автозапуск включен!\nЯрлык: {shortcutPath}", "Готово");
+                }
+                else
+                {
+                    // Удаляем ярлык
+                    if (System.IO.File.Exists(shortcutPath))
                     {
-                        key.SetValue(appName, $"\"{exePath}\"");
-                    }
-                    else
-                    {
-                        if (key.GetValue(appName) != null)
-                            key.DeleteValue(appName, false);
+                        System.IO.File.Delete(shortcutPath);
+                        MessageBox.Show("Автозапуск отключен!", "Готово");
                     }
                 }
             }
@@ -231,6 +238,20 @@ namespace WidgetES
                 MessageBox.Show($"Ошибка автозапуска: {ex.Message}", "Ошибка",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
             }
+        }
+
+        private void CreateShortcut(string shortcutPath, string targetPath)
+        {
+            // Используем WScript.Shell для создания ярлыка
+            Type shellType = Type.GetTypeFromProgID("WScript.Shell");
+            dynamic shell = Activator.CreateInstance(shellType);
+            dynamic shortcut = shell.CreateShortcut(shortcutPath);
+            shortcut.TargetPath = targetPath;
+            shortcut.WorkingDirectory = System.IO.Path.GetDirectoryName(targetPath);
+            shortcut.Save();
+
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(shortcut);
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(shell);
         }
     }
 }
