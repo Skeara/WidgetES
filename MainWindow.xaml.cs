@@ -20,6 +20,7 @@ using WidgetES.Properties;
 using System.IO;
 using Newtonsoft.Json;
 using AutoUpdaterDotNET;
+using System;
 
 namespace WidgetES
 {
@@ -52,7 +53,7 @@ namespace WidgetES
             InitializeTimer();
             InitializeSystemMonitor();
             UpdateDateTime();
-            UpdateGreeting();
+            //UpdateGreeting();
             InitializeWeatherTimer(); // <-- НОВЫЙ ТАЙМЕР
             UpdateWeather();
             notesFilePath = System.IO.Path.Combine(
@@ -67,6 +68,8 @@ namespace WidgetES
             //UpdateWeatherButtonOnlyAsync();
             RefreshWeatherAsync();
             InitializePageTimer();
+
+            InitializeGreeting();
         }
 
         private void SetupTray()
@@ -122,7 +125,7 @@ namespace WidgetES
                     break;
 
                 case 1: // Погода
-                    var weather = await GetWeatherAsync(Properties.Settings.Default.WeatherCity ?? "Moscow"); // Сначала получаем данные
+                    var weather = await GetWeatherAsync(Properties.Settings.Default.WeatherCity ?? "Москва"); // Сначала получаем данные
                     TimePanel.Visibility = Visibility.Collapsed;
                     InfoPanel.Visibility = Visibility.Visible;
                     ShowInfo(weather.FullInfo); // Потом отображаем
@@ -140,26 +143,57 @@ namespace WidgetES
         // Метод для получения системы
         private string GetSystemInfo()
         {
+            bool isLaptop = false;
             int batteryPercent = -1;
             string powerLine = "Неизвестно";
-            var process = System.Diagnostics.Process.GetCurrentProcess();
-            var usedMemory = process.WorkingSet64 / 1024 / 1024;
 
+            // Проверяем, есть ли батарея
             try
             {
                 using var searcher = new System.Management.ManagementObjectSearcher("SELECT * FROM Win32_Battery");
                 foreach (var battery in searcher.Get())
                 {
+                    isLaptop = true;
                     batteryPercent = Convert.ToInt32(battery["EstimatedChargeRemaining"]);
                     int status = Convert.ToInt32(battery["BatteryStatus"]);
                     powerLine = status == 2 ? "Подключено" : "От батареи";
                 }
-                if (batteryPercent < 0) batteryPercent = 100;
             }
             catch { }
 
-            return $"Батарея: {batteryPercent}%\nПитание: {powerLine}\nПамять приложения: {usedMemory} МБ";
+            // CPU загрузка
+            var cpuCounter = new System.Diagnostics.PerformanceCounter("Processor", "% Processor Time", "_Total");
+            float cpuUsage = cpuCounter.NextValue();
+            System.Threading.Thread.Sleep(500); // Нужно для корректного чтения
+            cpuUsage = cpuCounter.NextValue();
+
+            // RAM
+            var ramCounter = new System.Diagnostics.PerformanceCounter("Memory", "Available MBytes");
+            float freeRam = ramCounter.NextValue();
+            var totalRam = new Microsoft.VisualBasic.Devices.ComputerInfo().TotalPhysicalMemory / 1024 / 1024;
+            float usedRam = totalRam - freeRam;
+
+            // GPU (для NVIDIA через WMI)
+            //string gpuLoad = "Неизвестно";
+            //try
+            //{
+            //    using var searcher = new ManagementObjectSearcher("root\\CIMV2", "SELECT * FROM Win32_VideoController");
+            //    foreach (var obj in searcher.Get())
+            //    {
+            //        gpuLoad = obj["Name"]?.ToString() ?? "Неизвестно";
+            //        // Можно добавить GPU usage, если через PerformanceCounter есть драйвер
+            //    }
+            //}
+            //catch { }
+
+            // Формируем строку
+            string info = $"🖥CPU: {cpuUsage:F1}%\n💾RAM: {usedRam:F0}/{totalRam:F0} МБ";
+            if (isLaptop)
+                info = $"🔋Батарея: {batteryPercent}%\n🔌Питание: {powerLine}\n" + info;
+
+            return info;
         }
+
 
 
         private void InitializeCharacters()
@@ -271,7 +305,7 @@ namespace WidgetES
 
         private async void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
-            string currentCity = Properties.Settings.Default.WeatherCity ?? "Moscow";
+            string currentCity = Properties.Settings.Default.WeatherCity ?? "Москва";
 
             var selectionWindow = new CharacterSelectionWindow(currentCharacter, currentCity)
             {
@@ -318,7 +352,7 @@ namespace WidgetES
 
         private async Task RefreshWeatherAsync()
         {
-            string city = Properties.Settings.Default.WeatherCity ?? "Moscow";
+            string city = Properties.Settings.Default.WeatherCity ?? "Москва";
             var weather = await GetWeatherAsync(city);
 
             int roundedTemp = (int)Math.Round(weather.Temperature);
@@ -335,7 +369,7 @@ namespace WidgetES
 
         private async Task UpdateWeatherFullAsync()
         {
-            string city = Properties.Settings.Default.WeatherCity ?? "Moscow";
+            string city = Properties.Settings.Default.WeatherCity ?? "Москва";
             var weather = await GetWeatherAsync(city);
 
             // Кнопка
@@ -350,7 +384,7 @@ namespace WidgetES
         {
             try
             {
-                string city = Properties.Settings.Default.WeatherCity ?? "Moscow";
+                string city = Properties.Settings.Default.WeatherCity ?? "Москва";
                 var weather = await GetWeatherAsync(city);
                 ShowInfo(weather.FullInfo);  // показываем в планшете
             }
@@ -512,35 +546,299 @@ namespace WidgetES
             timer?.Stop();
             systemTimer?.Stop();
             weatherTimer?.Stop();
+            timeCheckTimer?.Stop();
+            typewriterTimer?.Stop();
+            pauseTimer?.Stop();
+            phraseTimer?.Stop();
+            cycleTimer?.Stop();
         }
 
-        private void UpdateGreeting()
+        //private void UpdateGreeting()
+        //{
+        //    try
+        //    {
+        //        // Получаем имя пользователя Windows
+        //        string userName = Environment.UserName;
+
+        //        // Получаем время суток для приветствия
+        //        int hour = DateTime.Now.Hour;
+        //        string greeting;
+
+        //        if (hour >= 6 && hour < 12)
+        //            greeting = "Доброе утро";
+        //        else if (hour >= 12 && hour < 18)
+        //            greeting = "Добрый день";
+        //        else if (hour >= 18 && hour < 23)
+        //            greeting = "Добрый вечер";
+        //        else
+        //            greeting = "Доброй ночи";
+
+        //        GreetingText.Text = $"{greeting}, {userName}!";
+        //    }
+        //    catch
+        //    {
+        //        GreetingText.Text = "Привет!";
+        //    }
+        //}
+
+        private DispatcherTimer greetingTimer;
+        private DispatcherTimer timeCheckTimer; // Новый таймер для проверки времени
+        private DispatcherTimer typewriterTimer;
+        private DispatcherTimer pauseTimer;
+        private DispatcherTimer phraseTimer;
+        private DispatcherTimer cycleTimer;
+        private string currentFullText = "";
+        private int currentCharIndex = 0;
+        private bool isTyping = false;
+        private Random random = new Random();
+        private string lastGreeting = ""; // Запоминаем последнее приветствие
+
+        // Список фразочек после приветствия
+        private List<string> phrases = new List<string>
         {
-            try
+            //"Как дела сегодня?",
+            //"Надеюсь, твой день идёт отлично!",
+            //"Время творить магию!",
+            //"Ты сегодня красавчик!",
+            //"Погнали работать!",
+            //"Кофе уже выпил?",
+            //"Продуктивного дня!",
+            //"Всё получится!",
+            //"Давай сделаем это!",
+            //"Ты справишься!",
+            //"Отличного настроения!",
+            //"Время побед!",
+            //"Сегодня твой день!",
+            //"Вперёд к целям!",
+            //"Успехов тебе!"
+                "День ждёт, не заставляй его скучать.",
+                "Каждое утро — шанс всё изменить!",
+                "Начни с улыбки — остальное приложится!",
+                "Сегодня будет круто, вот увидишь!",
+                "Кофе за тебя не выпьется!",
+                "Эй, не тормози — пора творить!",
+                "Успех уже под дверью, открой ему!",
+                "Сделай первый шаг, дальше будет легче!",
+                "Иногда главное — просто начать!",
+                "Ты можешь всё, просто поверь!",
+                "Настоящее время — это сейчас!",
+                "Не жди вдохновения — будь им!",
+                "Сегодня ты — главный персонаж!",
+                "Сосредоточься. Глубокий вдох. Погнали.",
+                "Пусть день будет добр к тебе.",
+                "Сделай что-то классное уже сегодня!",
+                "Мир не станет лучше без твоего участия!",
+                "Всё получится — просто действуй!",
+                "Даже маленький шаг — движение вперёд!",
+                "Ошибки — это часть пути, не стоп-знак!",
+                "Новая идея? Пора воплотить!",
+                "Пора в бой, командир!",
+                "Настоящая магия — это упорство!",
+                "Улыбнись. Ты справишься.",
+                "Будь тем, кем хотел быть вчера!",
+                "Главное — не идеально, а искренне!",
+                "Всё возможно. Просто сделай шаг.",
+                "Даже звёзды не загораются сразу!",
+                "Ты — свой главный проект!",
+                "Пусть будет день без сожалений!",
+                "Каждая мелочь — часть большого дела!",
+                "Энергия дня — у тебя в руках!",
+                "Просто живи этот день красиво.",
+                "Настройся на волну удачи!",
+                "Пусть сегодня всё сложится!"
+        };
+
+        // Вызови это в конструкторе окна или в Loaded
+        private void InitializeGreeting()
+        {
+            // Таймер для проверки времени суток каждые 30 секунд (чаще проверяем)
+            timeCheckTimer = new DispatcherTimer();
+            timeCheckTimer.Interval = TimeSpan.FromSeconds(30); // Было FromMinutes(1)
+            timeCheckTimer.Tick += (s, e) => CheckTimeOfDay();
+            timeCheckTimer.Start();
+
+            // Запускаем первый цикл сразу
+            lastGreeting = GetGreeting();
+            StartGreetingCycle();
+        }
+
+        // Проверяем изменилось ли время суток
+        private void CheckTimeOfDay()
+        {
+            string currentGreeting = GetGreeting();
+
+            // DEBUG
+            //System.Diagnostics.Debug.WriteLine($"Проверка: текущее={currentGreeting}, последнее={lastGreeting}, час={DateTime.Now.Hour}");
+
+            if (currentGreeting != lastGreeting)
             {
-                // Получаем имя пользователя Windows
-                string userName = Environment.UserName;
+                // DEBUG
+                //MessageBox.Show($"Время суток изменилось!\n{lastGreeting} → {currentGreeting}");
 
-                // Получаем время суток для приветствия
-                int hour = DateTime.Now.Hour;
-                string greeting;
-
-                if (hour >= 6 && hour < 12)
-                    greeting = "Доброе утро";
-                else if (hour >= 12 && hour < 18)
-                    greeting = "Добрый день";
-                else if (hour >= 18 && hour < 23)
-                    greeting = "Добрый вечер";
-                else
-                    greeting = "Доброй ночи";
-
-                GreetingText.Text = $"{greeting}, {userName}!";
-            }
-            catch
-            {
-                GreetingText.Text = "Привет!";
+                lastGreeting = currentGreeting;
+                StopAllTimers();
+                isTyping = false;
+                GreetingText.Text = "";
+                StartGreetingCycle();
             }
         }
+
+        // Останавливаем все таймеры цикла
+        private void StopAllTimers()
+        {
+            pauseTimer?.Stop();
+            phraseTimer?.Stop();
+            cycleTimer?.Stop();
+            typewriterTimer?.Stop();
+
+            pauseTimer = null;
+            phraseTimer = null;
+            cycleTimer = null;
+            typewriterTimer = null;
+        }
+
+        private void StartGreetingCycle()
+        {
+            if (isTyping) return;
+
+            // Получаем актуальное приветствие
+            string greeting = GetGreeting();
+            lastGreeting = greeting; // Обновляем последнее приветствие
+            string userName = Environment.UserName;
+            string greetingText = $"{greeting}, {userName}!";
+
+            // Показываем приветствие с анимацией
+            TypeText(greetingText, () =>
+            {
+                // После приветствия ждём 3 секунды
+                if (pauseTimer != null)
+                {
+                    pauseTimer.Stop();
+                    pauseTimer = null;
+                }
+
+                pauseTimer = new DispatcherTimer();
+                pauseTimer.Interval = TimeSpan.FromSeconds(3);
+                pauseTimer.Tick += (s, e) =>
+                {
+                    pauseTimer.Stop();
+                    // Стираем текст
+                    EraseText(() =>
+                    {
+                        // Показываем случайную фразу
+                        string phrase = phrases[random.Next(phrases.Count)];
+                        TypeText(phrase, () =>
+                        {
+                            // После фразы ждём 5 секунд
+                            if (phraseTimer != null)
+                            {
+                                phraseTimer.Stop();
+                                phraseTimer = null;
+                            }
+
+                            phraseTimer = new DispatcherTimer();
+                            phraseTimer.Interval = TimeSpan.FromSeconds(5);
+                            phraseTimer.Tick += (s2, e2) =>
+                            {
+                                phraseTimer.Stop();
+                                // Стираем фразу и начинаем цикл заново
+                                EraseText(() =>
+                                {
+                                    // Ждём 2 секунды перед новым циклом
+                                    if (cycleTimer != null)
+                                    {
+                                        cycleTimer.Stop();
+                                        cycleTimer = null;
+                                    }
+
+                                    cycleTimer = new DispatcherTimer();
+                                    cycleTimer.Interval = TimeSpan.FromSeconds(2);
+                                    cycleTimer.Tick += (s3, e3) =>
+                                    {
+                                        cycleTimer.Stop();
+                                        StartGreetingCycle();
+                                    };
+                                    cycleTimer.Start();
+                                });
+                            };
+                            phraseTimer.Start();
+                        });
+                    });
+                };
+                pauseTimer.Start();
+            });
+        }
+
+        private string GetGreeting()
+        {
+            int hour = DateTime.Now.Hour;
+            if (hour >= 6 && hour < 12)
+                return "Доброе утро";
+            else if (hour >= 12 && hour < 18)
+                return "Добрый день";
+            else if (hour >= 18 && hour < 23)
+                return "Добрый вечер";
+            else
+                return "Доброй ночи";
+        }
+
+        // Анимация печати текста
+        private void TypeText(string text, Action onComplete = null)
+        {
+            if (isTyping) return;
+
+            isTyping = true;
+            currentFullText = text;
+            currentCharIndex = 0;
+            GreetingText.Text = "";
+
+            typewriterTimer = new DispatcherTimer();
+            typewriterTimer.Interval = TimeSpan.FromMilliseconds(50); // Скорость печати
+            typewriterTimer.Tick += (s, e) =>
+            {
+                if (currentCharIndex < currentFullText.Length)
+                {
+                    GreetingText.Text += currentFullText[currentCharIndex];
+                    currentCharIndex++;
+                }
+                else
+                {
+                    typewriterTimer.Stop();
+                    isTyping = false;
+                    onComplete?.Invoke();
+                }
+            };
+            typewriterTimer.Start();
+        }
+
+        // Анимация стирания текста
+        private void EraseText(Action onComplete = null)
+        {
+            if (isTyping) return;
+
+            isTyping = true;
+            currentFullText = GreetingText.Text;
+            currentCharIndex = currentFullText.Length;
+
+            typewriterTimer = new DispatcherTimer();
+            typewriterTimer.Interval = TimeSpan.FromMilliseconds(30); // Скорость стирания (быстрее)
+            typewriterTimer.Tick += (s, e) =>
+            {
+                if (currentCharIndex > 0)
+                {
+                    currentCharIndex--;
+                    GreetingText.Text = currentFullText.Substring(0, currentCharIndex);
+                }
+                else
+                {
+                    typewriterTimer.Stop();
+                    isTyping = false;
+                    onComplete?.Invoke();
+                }
+            };
+            typewriterTimer.Start();
+        }
+
         //private void PositionWindowBottomLeft()
         //{
         //    var workArea = SystemParameters.WorkArea;
@@ -554,13 +852,17 @@ namespace WidgetES
             this.Top = workArea.Bottom - this.Height + 10; // прижимаем к нижнему краю
         }
 
+        private PerformanceCounter cpuCounter;
+
         private void InitializeSystemMonitor()
         {
+            cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+            //cpuCounter.NextValue(); // первый вызов — просто инициализация
+
             systemTimer = new DispatcherTimer();
-            systemTimer.Interval = TimeSpan.FromSeconds(5); // Обновление каждые 5 секунд
+            systemTimer.Interval = TimeSpan.FromSeconds(1);
             systemTimer.Tick += SystemTimer_Tick;
             systemTimer.Start();
-            UpdateSystemInfo(); // Сразу обновляем
         }
 
         private void SystemTimer_Tick(object sender, EventArgs e)
@@ -572,35 +874,128 @@ namespace WidgetES
         {
             try
             {
-                int batteryPercent = 0;
+                // Проверяем, есть ли батарея
+                bool isLaptop = false;
+                int batteryPercent = -1;
                 bool charging = false;
 
-                using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Battery"))
+                try
                 {
-                    foreach (var battery in searcher.Get())
+                    using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Battery"))
                     {
-                        batteryPercent = Convert.ToInt32(battery["EstimatedChargeRemaining"]);
-                        charging = Convert.ToInt32(battery["BatteryStatus"]) == 2; // 2 = заряжается
+                        foreach (var battery in searcher.Get())
+                        {
+                            isLaptop = true;
+                            batteryPercent = Convert.ToInt32(battery["EstimatedChargeRemaining"]);
+                            charging = Convert.ToInt32(battery["BatteryStatus"]) == 2; // 2 = заряжается
+                        }
                     }
                 }
+                catch { }
 
-                string batteryIcon;
-                if (charging)
-                    batteryIcon = "🔌";
-                else if (batteryPercent > 75)
-                    batteryIcon = "🔋";
-                else if (batteryPercent > 25)
-                    batteryIcon = "🔋";
+                if (isLaptop)
+                {
+                    // Ноутбук — показываем батарею
+                    string batteryIcon = charging ? "🔌" :
+                                         (batteryPercent > 75 ? "🔋" :
+                                         (batteryPercent > 25 ? "🔋" : "🪫"));
+
+                    Dispatcher.Invoke(() =>
+                    {
+                        SystemIcon.Text = batteryIcon;
+                        SystemText.Text = $"{batteryPercent}";
+                    });
+                }
                 else
-                    batteryIcon = "🪫";
+                {
+                    // Стационарный ПК — показываем процессор
+                    var cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+                    float cpuLoad = cpuCounter.NextValue();
+                    System.Threading.Thread.Sleep(100); // небольшой пауз, чтобы значение обновилось
+                    cpuLoad = cpuCounter.NextValue();
 
-                SystemText.Text = $"{batteryIcon}{batteryPercent}";
+                    Dispatcher.Invoke(() =>
+                    {
+                        SystemIcon.Text = "🖥";
+                        SystemText.Text = $"{Math.Round(cpuLoad)}";
+                    });
+                }
             }
             catch
             {
-                SystemText.Text = "⚡";
+                Dispatcher.Invoke(() =>
+                {
+                    SystemIcon.Text = "⚡";
+                    SystemText.Text = "";
+                });
             }
         }
+
+        //private void UpdateSystemInfo()
+        //{
+        //    Task.Run(() =>
+        //    {
+        //        string display = "";
+        //        try
+        //        {
+        //            bool isLaptop = false;
+        //            int batteryPercent = -1;
+        //            bool charging = false;
+
+        //            try
+        //            {
+        //                using var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Battery");
+        //                foreach (var battery in searcher.Get())
+        //                {
+        //                    //isLaptop = true;
+        //                    //batteryPercent = Convert.ToInt32(battery["EstimatedChargeRemaining"]);
+        //                    //charging = Convert.ToInt32(battery["BatteryStatus"]) == 2;
+        //                }
+        //            }
+        //            catch { }
+
+        //            if (isLaptop)
+        //            {
+        //                string batteryIcon = charging ? "🔌" :
+        //                                     (batteryPercent > 75 ? "🔋" :
+        //                                     (batteryPercent > 25 ? "🔋" : "🪫"));
+        //                //display = $"{batteryIcon}{batteryPercent}%";
+        //                Dispatcher.Invoke(() =>
+        //                {
+        //                    SystemIcon.Text = batteryIcon;
+        //                    SystemText.Text = $"{batteryPercent}%";
+        //                });
+        //            }
+        //            else
+        //            {
+        //                var cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+        //                cpuCounter.NextValue();
+        //                System.Threading.Thread.Sleep(100);
+        //                float cpuLoad = cpuCounter.NextValue();
+        //                //display = $"🖥 {Math.Round(cpuLoad)}";
+        //                Dispatcher.Invoke(() =>
+        //                {
+        //                    SystemIcon.Text = "🖥";
+        //                    SystemText.Text = $"{Math.Round(cpuLoad)}";
+        //                });
+        //            }
+        //        }
+        //        catch
+        //        {
+        //            //display = "⚡";
+        //            Dispatcher.Invoke(() =>
+        //            {
+        //                SystemIcon.Text = "⚡";
+        //                SystemText.Text = "";
+        //            });
+        //        }
+
+        //        //Dispatcher.Invoke(() => SystemText.Text = display);
+        //    });
+        //}
+
+
+
 
 
         private async void UpdateWeather()
@@ -970,6 +1365,86 @@ namespace WidgetES
             public string Condition { get; set; } = ""; // НОВОЕ
         }
 
+        private static readonly Dictionary<string, string> WeatherEmojiMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            // Ясно
+            ["Clear"] = "☀️",
+            ["Sunny"] = "☀️",
+            ["Ясно"] = "☀️",
+
+            // Облачно / частично облачно
+            ["Partly cloudy"] = "⛅",
+            ["Partly cloudy and clear"] = "⛅",
+            ["Mostly cloudy"] = "☁️",
+            ["Cloudy"] = "☁️",
+            ["Overcast"] = "☁️",
+            ["Частично облачно"] = "⛅",
+            ["Пасмурно"] = "☁️",
+
+            // Дождь
+            ["Light rain"] = "🌦️",
+            ["Moderate rain"] = "🌧️",
+            ["Heavy rain"] = "🌧️💧",
+            ["Showers"] = "🌧️",
+            ["Rain"] = "🌧️",
+            ["Rain and snow"] = "🌨️",
+            ["Дождь"] = "🌧️",
+            ["Ливень"] = "🌦️",
+
+            // Снег
+            ["Snow"] = "❄️",
+            ["Light snow"] = "🌨️",
+            ["Heavy snow"] = "❄️❄️",
+            ["Flurries"] = "🌨️",
+            ["Снег"] = "❄️",
+            ["Метель"] = "❄️🌬️",
+
+            // Дождь со снегом / смешанные осадки
+            ["Rain/snow"] = "🌨️",
+            ["Sleet"] = "🧊❄️",
+            ["Freezing rain"] = "🧊🌧️",
+            ["Ice pellets"] = "🧊❄️",
+            ["Rain and ice pellets"] = "🧊🌧️",
+
+            // Туман, дым, пыль
+            ["Fog"] = "🌫️",
+            ["Mist"] = "🌫️",
+            ["Haze"] = "🌫️",
+            ["Smoke"] = "💨🕳️",
+            ["Dust"] = "💨🟫",
+            ["Туман"] = "🌫️",
+            ["Дым"] = "💨🕳️",
+            ["Пыль"] = "💨🟫",
+
+            // Гроза
+            ["Thunderstorm"] = "⛈️",
+            ["Thunder"] = "⛈️",
+            ["Гроза"] = "⛈️",
+
+            // Ветер
+            ["Windy"] = "💨",
+            ["Wind"] = "💨",
+            ["Ветрено"] = "💨",
+
+            // По умолчанию
+            ["Unknown"] = "",
+            ["Неизвестно"] = ""
+        };
+
+        private string GetWeatherEmoji(string condition)
+        {
+            var c = condition.ToLowerInvariant();
+
+            if (c.Contains("снег")) return "❄️";       // любое упоминание снега
+            if (c.Contains("дождь")) return "🌧️";
+            if (c.Contains("гроза")) return "⛈️";
+            if (c.Contains("облачно") || c.Contains("пасмурно")) return "☁️";
+            if (c.Contains("ясно") || c.Contains("солнечно")) return "☀️";
+            if (c.Contains("туман") || c.Contains("дым") || c.Contains("пыль")) return "🌫️";
+            if (c.Contains("ветр")) return "💨";
+
+            return ""; // по умолчанию
+        }
         private async Task<WeatherData> GetWeatherAsync(string city)
         {
             try
@@ -993,9 +1468,11 @@ namespace WidgetES
                 double windKph = root.GetProperty("current").GetProperty("wind_kph").GetDouble();
                 double windMps = Math.Round(windKph / 3.6, 1); // 1 м/с = 3.6 км/ч
 
+                string emoji = GetWeatherEmoji(condition);
+
                 return new WeatherData
                 {
-                    FullInfo = $"{location}:\n🌡 {roundedTemp}°C\n{condition}\n💨 Ветер: {windMps} м/с",
+                    FullInfo = $"{location}:\n🌡 {roundedTemp}°C\n{emoji} {condition}\n💨 Ветер: {windMps} м/с",
                     Temperature = roundedTemp,
                     Condition = condition
                 };
@@ -1016,27 +1493,7 @@ namespace WidgetES
             ResumePageTimer();
             try
             {
-                int batteryPercent = -1;
-                string powerLine = "Неизвестно";
-
-                using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Battery"))
-                {
-                    foreach (var battery in searcher.Get())
-                    {
-                        batteryPercent = Convert.ToInt32(battery["EstimatedChargeRemaining"]);
-                        int status = Convert.ToInt32(battery["BatteryStatus"]);
-                        powerLine = status == 2 ? "Подключено" : "От батареи";
-                    }
-                }
-                if (batteryPercent < 0) batteryPercent = 100;
-
-                var process = Process.GetCurrentProcess();
-                var usedMemory = process.WorkingSet64 / 1024 / 1024;
-
-                string info = $"Батарея: {batteryPercent}%\n" +
-                              $"Питание: {powerLine}\n" +
-                              $"Память приложения: {usedMemory} МБ";
-
+                string info = GetSystemInfo();
                 ShowInfo(info);
             }
             catch (Exception ex)
@@ -1083,7 +1540,7 @@ namespace WidgetES
         }
         private async Task UpdateWeatherButtonOnlyAsync()
         {
-            string city = Properties.Settings.Default.WeatherCity ?? "Moscow";
+            string city = Properties.Settings.Default.WeatherCity ?? "Москва";
             var weather = await GetWeatherAsync(city);
             int roundedTemp = (int)Math.Round(weather.Temperature);
             WeatherText.Text = $"{roundedTemp}°";

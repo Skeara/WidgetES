@@ -146,7 +146,15 @@
                 <StackPanel Grid.Column="2" VerticalAlignment="Center">
                     <Button x:Name="SystemButton" Width="60" Height="40" Margin="0,5" 
                 Style="{StaticResource IconButtonStyle}" Click="SystemButton_Click" ToolTip="Система">
-                        <TextBlock x:Name="SystemText" Text="⚡" FontSize="18"/>
+                        <Grid HorizontalAlignment="Center" Width="56">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="40"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock x:Name="SystemIcon" Grid.Column="0" Text="?" FontSize="18" TextAlignment="Center" HorizontalAlignment="Center" Width="24"/>
+                            <TextBlock x:Name="SystemText" Grid.Column="1" Text="0" FontSize="18" TextAlignment="Center" HorizontalAlignment="Left" Width="31" Margin="1,0,0,0"/>
+                        </Grid>
                     </Button>
                     <Button x:Name="SettingsButton" Width="60" Height="40" Margin="0,5" 
                 Style="{StaticResource IconButtonStyle}" Click="SettingsButton_Click" ToolTip="Настройки">
@@ -160,19 +168,27 @@
             </Grid>
 
             <!-- 3. ПРИВЕТСТВИЕ — ПОВЕРХ ПЛАНШЕТА -->
-            <Border Background="#4A7C59"
-                    Height="40"
+            <Border
+                    Height="60"
                     VerticalAlignment="Bottom"
                     Margin="15,0,15,20"
                     CornerRadius="5"
                     Panel.ZIndex="2">
+                <Border.Background>
+                    <ImageBrush ImageSource="pack://application:,,,/Images/dialogue_box.png" />
+                </Border.Background>
                 <TextBlock x:Name="GreetingText"
-                           Text="Привет, пользователь."
-                           Foreground="White"
-                           FontSize="14"
-                           VerticalAlignment="Center"
-                           HorizontalAlignment="Left"
-                           Margin="10,0,0,0"/>
+           Text="Привет, пользователь."
+           Foreground="#E2C778"
+           FontSize="14"
+           VerticalAlignment="Center"
+           HorizontalAlignment="Left"
+           Margin="10,0,0,0">
+                    <TextBlock.Effect>
+                        <DropShadowEffect Color="#000000" ShadowDepth="2" Direction="315" BlurRadius="0" Opacity="1"/>
+
+                    </TextBlock.Effect>
+                </TextBlock>
             </Border>
         </Grid>
     </Border>

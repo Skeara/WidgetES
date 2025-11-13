@@ -11,8 +11,8 @@
 	  <Company>Mozimer Russia Entertainment</Company>
 	  <Authors>Mozimer Russia Entertainment</Authors>
 	  <Copyright>© 2025 Mozimer Russia Entertainment. Все права защищены.</Copyright>
-	  <Version>1.0</Version>
-	  <FileVersion>1.0</FileVersion>
+	  <Version>1.1</Version>
+	  <FileVersion>1.1</FileVersion>
 	  <ApplicationIcon>mozimer.ico</ApplicationIcon>
   </PropertyGroup>
 
@@ -28,6 +28,7 @@
     <None Remove="Images\character7.png" />
     <None Remove="Images\character8.png" />
     <None Remove="Images\character9.png" />
+    <None Remove="Images\dialogue_box.png" />
     <None Remove="Images\yoomoney.png" />
     <None Remove="kryg2.png" />
     <None Remove="mozimer.ico" />
@@ -62,6 +63,7 @@
     <Resource Include="Images\character7.png" />
     <Resource Include="Images\character8.png" />
     <Resource Include="Images\character9.png" />
+    <Resource Include="Images\dialogue_box.png" />
     <Resource Include="Images\yoomoney.png" />
     <Resource Include="kryg2.png" />
     <Content Include="mozimer.ico">

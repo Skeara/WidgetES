@@ -23,7 +23,7 @@ namespace WidgetES
         private List<Button> characterButtons;
         private List<string> characterImages;
 
-        public CharacterSelectionWindow(int currentSelection, string currentCity = "Moscow")
+        public CharacterSelectionWindow(int currentSelection, string currentCity = "Москва")
         {
             InitializeComponent();
             SelectedCharacter = currentSelection;
@@ -186,7 +186,7 @@ namespace WidgetES
         {
             SelectedCity = CityTextBox.Text.Trim();
             if (string.IsNullOrWhiteSpace(SelectedCity))
-                SelectedCity = "Moscow";
+                SelectedCity = "Москва";
 
             Properties.Settings.Default.AlwaysOnTop = TopmostCheckBox.IsChecked == true;
             Properties.Settings.Default.AutoStart = AutoStartCheckBox.IsChecked == true;
@@ -221,7 +221,7 @@ namespace WidgetES
                 {
                     // Создаем ярлык
                     CreateShortcut(shortcutPath, exePath);
-                    MessageBox.Show($"Автозапуск включен!\nЯрлык: {shortcutPath}", "Готово");
+                    //MessageBox.Show($"Автозапуск включен!\nЯрлык: {shortcutPath}", "Готово");
                 }
                 else
                 {
@@ -229,7 +229,7 @@ namespace WidgetES
                     if (System.IO.File.Exists(shortcutPath))
                     {
                         System.IO.File.Delete(shortcutPath);
-                        MessageBox.Show("Автозапуск отключен!", "Готово");
+                        //MessageBox.Show("Автозапуск отключен!", "Готово");
                     }
                 }
             }
